@@ -8,12 +8,4 @@
     <artifactId>org.yakimovdenis</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <dependencies>
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>1.11</version>
-            </dependency>
-    </dependencies>
-
 </project>
