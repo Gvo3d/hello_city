@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class TestCases {
     private static String ODESSA = "Odessa";
     private static String ODESSA2 = "odEsSa";
+    private static String LOSANGELES = "Los_Angeles";
     private static String TIMEZONE = "America/Los_Angeles";
     private static final String NEWLINE = System.getProperty("line.separator").toString();
     private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -91,5 +92,19 @@ public class TestCases {
         result[1] = TIMEZONE;
         Greeter.main(result);
         Assert.assertEquals(getCompareString(TIMEZONE, ODESSA)+", Odessa!"+NEWLINE, byteArrayOutputStream.toString());
+    }
+
+    @Test
+    public void simpleTest4() {
+        String[] result = new String[1];
+        result[0] = ODESSA;
+        Greeter.main(result);
+        String odessianHello = byteArrayOutputStream.toString().split("\\,")[0];
+        byteArrayOutputStream = new ByteArrayOutputStream();
+
+        result[0] = LOSANGELES;
+        Greeter.main(result);
+        String losangeleHello = byteArrayOutputStream.toString().split("\\,")[0];
+        Assert.assertNotEquals(odessianHello,losangeleHello);
     }
 }
