@@ -1,17 +1,17 @@
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.yakimovdenis.Clock;
 import org.yakimovdenis.Greeter;
+import org.yakimovdenis.IClock;
+import org.yakimovdenis.Main;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class TestCases {
@@ -31,7 +31,6 @@ public class TestCases {
         Locale.setDefault(LOCALE);
         props = new Properties();
         sdf = new SimpleDateFormat("HH");
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         InputStream reader = Greeter.class.getClassLoader().getResourceAsStream("properties_en.properties");
         try {
             props.load(reader);
@@ -40,7 +39,22 @@ public class TestCases {
         }
     }
 
-    private String getCompareString(String tz, String cityName) {
+    private void executeTestAtHour(int hour) {
+        String[] args = new String[1];
+        args[0] = ODESSA;
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2017, Calendar.SEPTEMBER, 19, hour, 01, 01);
+        TestClock clock = new TestClock(calendar.getTimeInMillis());
+        Greeter greeter = new Greeter(clock);
+        greeter.setWriteToLog(true);
+        greeter.calculateAndWrite(args);
+
+        Assert.assertEquals(getCompareString(null, ODESSA, clock) + ", Odessa!" + NEWLINE, byteArrayOutputStream.toString());
+        System.err.println("This is not a error. We remind you - that you can check manually logging.log for Greeter function results, because for that test property setWriteToLog was true.\nTime that was tested: "+hour+" hour.");
+    }
+
+    private String getCompareString(String tz, String cityName, IClock clock) {
+        int currentTimeZoneOffset = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
         int tzTime = 0;
         TimeZone tzObject = null;
         if (tz != null) {
@@ -63,9 +77,12 @@ public class TestCases {
         }
         tzTime = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(tzObject.getRawOffset()));
 
-        Date now = new Date(System.currentTimeMillis());
-        int resultHours = Integer.parseInt(sdf.format(now));
-        resultHours = resultHours + tzTime;
+        if (null == clock) {
+            clock = new Clock();
+        }
+
+        int resultHours = Integer.parseInt(sdf.format(new Date(clock.getCurrentTime())));
+        resultHours = resultHours + tzTime-currentTimeZoneOffset;
         String comparsionString = null;
         if (resultHours >= 6 && resultHours < 9) {
             comparsionString = props.getProperty("result.morning");
@@ -81,40 +98,79 @@ public class TestCases {
 
     @Test
     public void simpleTest() {
-        String[] result = new String[1];
-        result[0] = ODESSA;
-        Greeter.main(result);
-        Assert.assertEquals(getCompareString(null, ODESSA)+", Odessa!"+NEWLINE, byteArrayOutputStream.toString());
+        String[] args = new String[1];
+        args[0] = ODESSA;
+        Main.main(args);
+        Assert.assertEquals(getCompareString(null, ODESSA, null) + ", Odessa!" + NEWLINE, byteArrayOutputStream.toString());
     }
 
     @Test
-    public void simpleTest2() {
-        String[] result = new String[1];
-        result[0] = ODESSA2;
-        Greeter.main(result);
-        Assert.assertEquals(getCompareString(null, ODESSA)+", Odessa!"+NEWLINE, byteArrayOutputStream.toString());
+    public void simpleTestWithWrongCityname() {
+        String[] args = new String[1];
+        args[0] = ODESSA2;
+        Main.main(args);
+        Assert.assertEquals(getCompareString(null, ODESSA, null) + ", Odessa!" + NEWLINE, byteArrayOutputStream.toString());
     }
 
     @Test
-    public void simpleTest3() {
-        String[] result = new String[2];
-        result[0] = ODESSA2;
-        result[1] = TIMEZONE;
-        Greeter.main(result);
-        Assert.assertEquals(getCompareString(TIMEZONE, ODESSA)+", Odessa!"+NEWLINE, byteArrayOutputStream.toString());
+    public void simpleTestWithOtherTimezone() {
+        String[] args = new String[2];
+        args[0] = ODESSA2;
+        args[1] = TIMEZONE;
+        Main.main(args);
+        Assert.assertEquals(getCompareString(TIMEZONE, ODESSA, null) + ", Odessa!" + NEWLINE, byteArrayOutputStream.toString());
     }
 
     @Test
-    public void simpleTest4() {
-        String[] result = new String[1];
-        result[0] = ODESSA;
-        Greeter.main(result);
+    public void simpleTestWithTwoZonesNotEquals() {
+        String[] args = new String[1];
+        args[0] = ODESSA;
+        Main.main(args);
         String odessianHello = byteArrayOutputStream.toString().split("\\,")[0];
         byteArrayOutputStream = new ByteArrayOutputStream();
 
-        result[0] = LOSANGELES;
-        Greeter.main(result);
+        args[0] = LOSANGELES;
+        Main.main(args);
         String losangeleHello = byteArrayOutputStream.toString().split("\\,")[0];
-        Assert.assertNotEquals(odessianHello,losangeleHello);
+        Assert.assertNotEquals(odessianHello, losangeleHello);
+    }
+
+    @Test
+    public void simpleTestWithTimeChange() {
+        executeTestAtHour(1);
+    }
+
+    @Test
+    public void simpleTestWithTimeChange2() {
+        executeTestAtHour(7);
+    }
+
+    @Test
+    public void simpleTestWithTimeChange3() {
+        executeTestAtHour(9);
+    }
+
+    @Test
+    public void simpleTestWithTimeChange4() {
+        executeTestAtHour(19);
+    }
+
+    @Test
+    public void simpleTestWithTimeChange5() {
+        executeTestAtHour(23);
+    }
+
+
+    private class TestClock implements IClock {
+        private long time;
+
+        public TestClock(long time) {
+            this.time = time;
+        }
+
+        @Override
+        public long getCurrentTime() {
+            return time;
+        }
     }
 }

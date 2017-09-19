@@ -10,9 +10,22 @@ import java.util.concurrent.TimeUnit;
 public class Greeter {
     private final static Logger slf4jLogger = LoggerFactory.getLogger(Greeter.class);
     private static final String GMT = "GMT";
+    private static final String BASENAME = "properties";
+    private ResourceBundle resources;
+    private IClock clock;
+    private boolean writeToLog = false;
 
-    public static void main(String[] args) {
-        ResourceBundle resources = getResourceBundleInstance();
+    public Greeter(IClock clock) {
+        this.clock = clock;
+    }
+
+    public void setWriteToLog(boolean writeToLog) {
+        this.writeToLog = writeToLog;
+    }
+
+    public void calculateAndWrite(String[] args){
+        int currentTimeZoneOffset = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
+        resources = getResourceBundleInstance(BASENAME);
         if (args.length == 0) {
             slf4jLogger.error(resources.getString("error.emptyArgs"));
             System.exit(1);
@@ -27,10 +40,9 @@ public class Greeter {
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH");
-        sdf.setTimeZone(TimeZone.getTimeZone(GMT));
         StringBuilder builder = new StringBuilder();
-        int hours = Integer.parseInt(sdf.format(System.currentTimeMillis()));
-        hours = hours + timeZoneOffset;
+        int hours = Integer.parseInt(sdf.format(clock.getCurrentTime()));
+        hours = hours + timeZoneOffset-currentTimeZoneOffset;
 
         if (hours >= 6 && hours < 9) {
             builder.append(resources.getString("result.morning"));
@@ -45,14 +57,19 @@ public class Greeter {
         builder.append(cityName);
         builder.append("!");
         System.out.println(builder.toString());
+        if (writeToLog) {
+            StringBuilder logBuilder = new StringBuilder("LOG: City: ").append(cityName).append(". Time from clock: ").append(hours-timeZoneOffset+currentTimeZoneOffset).append(". Local timezone: ").append(TimeZone.getDefault().getID()).append(". Local timezone offset: ").append(currentTimeZoneOffset).append(". Inserted timezone offset: ").append(timeZoneOffset);
+            slf4jLogger.info(logBuilder.toString());
+        }
     }
 
-    private static int getTimeZoneDelta(String timeZoneString, String cityNameString) {
+    private int getTimeZoneDelta(String timeZoneString, String cityNameString) {
         TimeZone timezone = null;
         if (null != timeZoneString) {
             timezone = TimeZone.getTimeZone(timeZoneString);
             if (timezone.equals(TimeZone.getTimeZone(GMT)) && !timeZoneString.equals(GMT)) {
                 timezone = null;
+                slf4jLogger.warn(resources.getString("error.wrongTimeZone"));
             }
         }
         if (null == timezone) {
@@ -70,10 +87,9 @@ public class Greeter {
         return Math.toIntExact(TimeUnit.MILLISECONDS.toHours(timezone.getRawOffset()));
     }
 
-    private static ResourceBundle getResourceBundleInstance() {
+    private ResourceBundle getResourceBundleInstance(String baseName) {
         Locale currLocale = Locale.getDefault();
         ResourceBundle resources = null;
-        String baseName = "properties";
         try {
             resources = ResourceBundle.getBundle(baseName, currLocale);
         } catch (MissingResourceException e) {
