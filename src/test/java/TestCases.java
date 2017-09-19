@@ -7,8 +7,6 @@ import org.yakimovdenis.IClock;
 import org.yakimovdenis.Main;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -23,20 +21,14 @@ public class TestCases {
     private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     private SimpleDateFormat sdf;
     private static Locale LOCALE = Locale.ENGLISH;
-    private Properties props;
+    private ResourceBundle props;
 
     @Before
     public void setUpStreams() {
         System.setOut(new PrintStream(byteArrayOutputStream));
         Locale.setDefault(LOCALE);
-        props = new Properties();
+        props = Greeter.getResourceBundleInstance("properties");
         sdf = new SimpleDateFormat("HH");
-        InputStream reader = Greeter.class.getClassLoader().getResourceAsStream("properties_en.properties");
-        try {
-            props.load(reader);
-        } catch (IOException e) {
-            System.out.println("ERROR with opening props!");
-        }
     }
 
     private void executeTestAtHour(int hour) {
@@ -88,13 +80,13 @@ public class TestCases {
 
         String comparsionString = null;
         if (resultHours >= 6 && resultHours < 9) {
-            comparsionString = props.getProperty("result.morning");
+            comparsionString = props.getString("result.morning");
         } else if (resultHours >= 9 && resultHours < 19) {
-            comparsionString = props.getProperty("result.day");
+            comparsionString = props.getString("result.day");
         } else if (resultHours >= 19 && resultHours < 23) {
-            comparsionString = props.getProperty("result.evening");
+            comparsionString = props.getString("result.evening");
         } else {
-            comparsionString = props.getProperty("result.night");
+            comparsionString = props.getString("result.night");
         }
         return comparsionString;
     }

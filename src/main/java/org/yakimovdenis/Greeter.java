@@ -98,7 +98,7 @@ public class Greeter {
         return Math.toIntExact(TimeUnit.MILLISECONDS.toHours(timezone.getRawOffset()));
     }
 
-    private ResourceBundle getResourceBundleInstance(String baseName) {
+    public static ResourceBundle getResourceBundleInstance(String baseName) {
         Locale currLocale = Locale.getDefault();
         ResourceBundle resources = null;
         try {
