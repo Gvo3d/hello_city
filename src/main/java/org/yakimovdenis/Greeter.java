@@ -3,16 +3,18 @@ package org.yakimovdenis;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Greeter {
-    private final static Logger slf4jLogger = LoggerFactory.getLogger(Greeter.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(Greeter.class);
     private static final String GMT = "GMT";
     private static final String BASENAME = "properties";
     private ResourceBundle resources;
     private IClock clock;
+    private String insertedTimeZone;
     private boolean writeToLog = false;
 
     public Greeter(IClock clock) {
@@ -23,11 +25,10 @@ public class Greeter {
         this.writeToLog = writeToLog;
     }
 
-    public void calculateAndWrite(String[] args){
-        int currentTimeZoneOffset = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
+    public void calculateAndWrite(String[] args) {
         resources = getResourceBundleInstance(BASENAME);
         if (args.length == 0) {
-            slf4jLogger.error(resources.getString("error.emptyArgs"));
+            LOGGER.error(resources.getString("error.emptyArgs"));
             System.exit(1);
         }
 
@@ -42,7 +43,10 @@ public class Greeter {
         SimpleDateFormat sdf = new SimpleDateFormat("HH");
         StringBuilder builder = new StringBuilder();
         int hours = Integer.parseInt(sdf.format(clock.getCurrentTime()));
-        hours = hours + timeZoneOffset-currentTimeZoneOffset;
+
+        if (timeZoneOffset != 0) {
+            hours = hours + timeZoneOffset - Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
+        }
 
         if (hours >= 6 && hours < 9) {
             builder.append(resources.getString("result.morning"));
@@ -58,18 +62,21 @@ public class Greeter {
         builder.append("!");
         System.out.println(builder.toString());
         if (writeToLog) {
-            StringBuilder logBuilder = new StringBuilder("LOG: City: ").append(cityName).append(". Time from clock: ").append(hours-timeZoneOffset+currentTimeZoneOffset).append(". Local timezone: ").append(TimeZone.getDefault().getID()).append(". Local timezone offset: ").append(currentTimeZoneOffset).append(". Inserted timezone offset: ").append(timeZoneOffset);
-            slf4jLogger.info(logBuilder.toString());
+            StringBuilder logBuilder = new StringBuilder("LOG: City: ").append(cityName).append(". Time from clock: ").append(hours - timeZoneOffset).append(". Local timezone: ").append(TimeZone.getDefault().getID()).append(". Inserted timezone: ").append(insertedTimeZone).append(". Inserted timezone offset: ").append(timeZoneOffset).append('\n').append(builder.toString());
+            LOGGER.info(logBuilder.toString());
         }
     }
 
     private int getTimeZoneDelta(String timeZoneString, String cityNameString) {
         TimeZone timezone = null;
+        insertedTimeZone = "NO";
         if (null != timeZoneString) {
             timezone = TimeZone.getTimeZone(timeZoneString);
             if (timezone.equals(TimeZone.getTimeZone(GMT)) && !timeZoneString.equals(GMT)) {
                 timezone = null;
-                slf4jLogger.warn(resources.getString("error.wrongTimeZone"));
+                LOGGER.warn(resources.getString("error.wrongTimeZone"));
+            } else {
+                insertedTimeZone = timeZoneString;
             }
         }
         if (null == timezone) {
@@ -96,7 +103,7 @@ public class Greeter {
             try {
                 resources = ResourceBundle.getBundle(baseName, Locale.ENGLISH);
             } catch (MissingResourceException e1) {
-                slf4jLogger.error("Internationalization properties file is not found: " + baseName);
+                LOGGER.error("Internationalization properties file is not found: " + baseName);
                 System.exit(1);
             }
         }

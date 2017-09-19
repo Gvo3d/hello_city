@@ -54,7 +54,6 @@ public class TestCases {
     }
 
     private String getCompareString(String tz, String cityName, IClock clock) {
-        int currentTimeZoneOffset = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
         int tzTime = 0;
         TimeZone tzObject = null;
         if (tz != null) {
@@ -82,7 +81,11 @@ public class TestCases {
         }
 
         int resultHours = Integer.parseInt(sdf.format(new Date(clock.getCurrentTime())));
-        resultHours = resultHours + tzTime-currentTimeZoneOffset;
+
+        if (tzTime != 0) {
+            resultHours = resultHours + tzTime - Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getDefault().getRawOffset()));
+        }
+
         String comparsionString = null;
         if (resultHours >= 6 && resultHours < 9) {
             comparsionString = props.getProperty("result.morning");
@@ -117,7 +120,10 @@ public class TestCases {
         String[] args = new String[2];
         args[0] = ODESSA2;
         args[1] = TIMEZONE;
-        Main.main(args);
+        IClock clock = new Clock();
+        Greeter greeter = new Greeter(clock);
+        greeter.setWriteToLog(true);
+        greeter.calculateAndWrite(args);
         Assert.assertEquals(getCompareString(TIMEZONE, ODESSA, null) + ", Odessa!" + NEWLINE, byteArrayOutputStream.toString());
     }
 
