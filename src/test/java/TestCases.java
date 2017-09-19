@@ -158,11 +158,10 @@ public class TestCases {
         executeTestAtHour(23);
     }
 
-
     private class TestClock implements IClock {
         private long time;
 
-        public TestClock(long time) {
+        TestClock(long time) {
             this.time = time;
         }
 
