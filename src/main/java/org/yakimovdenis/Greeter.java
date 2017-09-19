@@ -1,22 +1,18 @@
 package org.yakimovdenis;
 
-import org.apache.commons.lang.LocaleUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Greeter {
     private final static Logger slf4jLogger = LoggerFactory.getLogger(Greeter.class);
+    private static final String GMT = "GMT";
 
     public static void main(String[] args) {
         ResourceBundle resources = getResourceBundleInstance();
-        System.out.println("res: "+resources.getLocale());
-
         if (args.length == 0) {
             slf4jLogger.error(resources.getString("error.emptyArgs"));
             System.exit(1);
@@ -31,7 +27,7 @@ public class Greeter {
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH");
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        sdf.setTimeZone(TimeZone.getTimeZone(GMT));
         StringBuilder builder = new StringBuilder();
         int hours = Integer.parseInt(sdf.format(System.currentTimeMillis()));
         hours = hours + timeZoneOffset;
@@ -42,7 +38,7 @@ public class Greeter {
             builder.append(resources.getString("result.day"));
         } else if (hours >= 19 && hours < 23) {
             builder.append(resources.getString("result.evening"));
-        } else if (hours >= 23 || hours < 6) {
+        } else {
             builder.append(resources.getString("result.night"));
         }
         builder.append(", ");
@@ -52,19 +48,26 @@ public class Greeter {
     }
 
     private static int getTimeZoneDelta(String timeZoneString, String cityNameString) {
-        int result = 0;
-        if (null == timeZoneString) {
+        TimeZone timezone = null;
+        if (null != timeZoneString) {
+            timezone = TimeZone.getTimeZone(timeZoneString);
+            if (timezone.equals(TimeZone.getTimeZone(GMT)) && !timeZoneString.equals(GMT)) {
+                timezone = null;
+            }
+        }
+        if (null == timezone) {
             String[] ids = TimeZone.getAvailableIDs();
-            String comparsionCity = cityNameString.replace(" ", "_");
+            String comparableCityName = cityNameString.replace(" ", "_");
             for (String id : ids) {
-                if (id.contains(comparsionCity)) {
-                    result = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getTimeZone(id).getRawOffset()));
+                if (id.contains(comparableCityName)) {
+                    timezone = TimeZone.getTimeZone(id);
                 }
             }
-        } else {
-            result = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getTimeZone(timeZoneString).getRawOffset()));
         }
-        return result;
+        if (null == timezone) {
+            timezone = TimeZone.getTimeZone(GMT);
+        }
+        return Math.toIntExact(TimeUnit.MILLISECONDS.toHours(timezone.getRawOffset()));
     }
 
     private static ResourceBundle getResourceBundleInstance() {

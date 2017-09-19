@@ -19,9 +19,9 @@ public class TestCases {
     private static String ODESSA2 = "odEsSa";
     private static String LOSANGELES = "Los_Angeles";
     private static String TIMEZONE = "America/Los_Angeles";
-    private static final String NEWLINE = System.getProperty("line.separator").toString();
+    private static final String NEWLINE = System.getProperty("line.separator");
     private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    private SimpleDateFormat sdf = new SimpleDateFormat("HH");
+    private SimpleDateFormat sdf;
     private static Locale LOCALE = Locale.ENGLISH;
     private Properties props;
 
@@ -30,6 +30,8 @@ public class TestCases {
         System.setOut(new PrintStream(byteArrayOutputStream));
         Locale.setDefault(LOCALE);
         props = new Properties();
+        sdf = new SimpleDateFormat("HH");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         InputStream reader = Greeter.class.getClassLoader().getResourceAsStream("properties_en.properties");
         try {
             props.load(reader);
@@ -40,19 +42,27 @@ public class TestCases {
 
     private String getCompareString(String tz, String cityName) {
         int tzTime = 0;
+        TimeZone tzObject = null;
         if (tz != null) {
-            TimeZone tzObject = TimeZone.getTimeZone(tz);
-            sdf.setTimeZone(tzObject);
-        } else {
-            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+            tzObject = TimeZone.getTimeZone(tz);
+            if (tzObject.equals(TimeZone.getTimeZone("GMT")) && !tz.equals("GMT")) {
+                tzObject = null;
+            }
+        }
+        if (null == tzObject) {
             String[] ids = TimeZone.getAvailableIDs();
             String comparsionCity = cityName.replace(" ", "_");
             for (String id : ids) {
                 if (id.contains(comparsionCity)) {
-                    tzTime = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(TimeZone.getTimeZone(id).getRawOffset()));
+                    tzObject = TimeZone.getTimeZone(id);
                 }
             }
         }
+        if (null == tzObject) {
+            tzObject = TimeZone.getTimeZone("GMT");
+        }
+        tzTime = Math.toIntExact(TimeUnit.MILLISECONDS.toHours(tzObject.getRawOffset()));
+
         Date now = new Date(System.currentTimeMillis());
         int resultHours = Integer.parseInt(sdf.format(now));
         resultHours = resultHours + tzTime;
@@ -63,7 +73,7 @@ public class TestCases {
             comparsionString = props.getProperty("result.day");
         } else if (resultHours >= 19 && resultHours < 23) {
             comparsionString = props.getProperty("result.evening");
-        } else if (resultHours >= 23 || resultHours < 6) {
+        } else {
             comparsionString = props.getProperty("result.night");
         }
         return comparsionString;
