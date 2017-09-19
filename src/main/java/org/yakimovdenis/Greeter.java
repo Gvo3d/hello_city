@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class Greeter {
     private final static Logger LOGGER = LoggerFactory.getLogger(Greeter.class);
     private static final String GMT = "GMT";
-    private static final String BASENAME = "properties";
+    private String basename = "properties";
     private ResourceBundle resources;
     private IClock clock;
     private String insertedTimeZone;
@@ -25,8 +25,12 @@ public class Greeter {
         this.writeToLog = writeToLog;
     }
 
+    public void setBasename(String basename) {
+        this.basename = basename;
+    }
+
     public void calculateAndWrite(String[] args) {
-        resources = getResourceBundleInstance(BASENAME);
+        resources = getResourceBundleInstance(basename);
         if (args.length == 0) {
             LOGGER.error(resources.getString("error.emptyArgs"));
             System.exit(1);
